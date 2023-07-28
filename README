@@ -1,0 +1,64 @@
+This is a software distribution of an attack against Drew Dean and Alan Hu's
+access/open race condition countermeasure as described in "Fixing Races for
+Fun and Profit: How to use access(2)" from Usenix Security 2004.  The details
+of our attack are contained in our paper "Fixing Races for Fun and Profit: How
+to Abuse atime".
+
+PLATFORMS
+
+This software distribution has been tested on Linux 2.4, FreeBSD, and Sun
+Solaris. 
+
+FILES
+    victim.c: Victim process that uses Dean and Hu's probabilistic scheme to 
+              try to securely open a file. It prints the contents of the
+              filename passed as its last argument. When setuid, it only prints
+              the file if the invoker's permissions allow the invoker to view
+              the file.
+
+    attacker.c: Attack program against Dean and Hu's scheme. It will launch
+              the victim and convince the victim to open a file that violates
+              the security check.
+
+    mkdirs.pl: script to set up the attacker's directory structure.
+
+    speed.c: program to profile the speed of various open techniques that
+             check for permissions.
+
+RUNNING
+    
+First, you must create the public and secret files and set up the permissions. 
+
+        cd races/src/        
+        mkdir -p ~/tmp/races
+        echo "secret" > ~/tmp/secret
+        echo "public" > ~/tmp/public
+        chmod 444 ~/tmp/public
+        chmod 400 ~/tmp/secret
+        chmod 4111 ./victim
+        chown <victim_user> ./victim
+        chown <victim_user> ~/tmp/secret
+
+and then create the directory structure: 
+
+        ./mkdirs.pl ~/tmp/races 15 20 400 ~/tmp/public ~/tmp/secret
+
+and clear the buffer cache:
+
+        ./run_for.pl 120 grep -r xoxoxo /usr
+
+and then run the attack (note, you'll need to adjust the 3rd param, 'f' as
+appropriate for your OS; see documentation in attacker.c. 'f' will work on
+Linux ). 
+
+        ./attacker 0 a f ~/tmp/races/ 15 20 ./victim 0 7 d 1
+
+The attacker will convince the victim to print the contents of the secret file
+when it shouldn't have. 
+
+
+AUTHORS
+              Nikita Borisov     Robert Johnson     Naveen Sastry              
+                   {nikitab, rtjohnso, nks} @ cs.berkeley.edu   
+                                 CS Department               
+                                  UC Berkeley
